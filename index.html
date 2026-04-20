@@ -1,0 +1,791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+  <link
+  href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap"
+  rel="stylesheet"
+/>
+<title>Password Security Lab — CMSC 414</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+
+<style>
+:root {
+  --bg: #0d1117; --bg2: #161b27; --bg3: #1c2333;
+  --border: rgba(255,255,255,0.07); --border2: rgba(255,255,255,0.13);
+  --text: #e2e8f0; --text2: #8892a4; --text3: #4a5568;
+  --accent: #4fffb0; --accent2: #38bdf8;
+  --red: #f87171; --amber: #fbbf24; --green: #34d399; --purple: #a78bfa;
+  --mono: 'IBM Plex Mono', monospace; --sans: 'IBM Plex Sans', sans-serif;
+  --r: 8px; --rl: 12px;
+}
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: var(--sans); background: var(--bg); color: var(--text); min-height: 100vh; }
+
+.layout { display: flex; min-height: 100vh; }
+
+/* SIDEBAR */
+.sidebar {
+  width: 230px; flex-shrink: 0; background: var(--bg2);
+  border-right: 1px solid var(--border); display: flex; flex-direction: column;
+  padding: 1.25rem 0; position: fixed; top: 0; left: 0; bottom: 0; z-index: 10;
+}
+.logo { padding: 0 1.25rem 1.25rem; border-bottom: 1px solid var(--border); margin-bottom: 0.75rem; }
+.logo-mark { width: 34px; height: 34px; background: var(--accent); border-radius: 8px; display: flex; align-items: center; justify-content: center; margin-bottom: 10px; }
+.logo h1 { font-size: 13px; font-weight: 600; color: var(--text); }
+.logo p { font-size: 11px; color: var(--text3); margin-top: 3px; font-family: var(--mono); }
+
+.nav { padding: 0 0.625rem; }
+.nav-group { margin-bottom: 1.25rem; }
+.nav-grouplabel { font-size: 10px; color: var(--text3); letter-spacing: 0.1em; text-transform: uppercase; padding: 0 0.5rem; margin-bottom: 4px; display: block; }
+.nav-btn {
+  display: flex; align-items: center; gap: 10px; width: 100%; padding: 8px 10px;
+  border-radius: var(--r); background: none; border: none; color: var(--text2);
+  font-size: 13px; font-family: var(--sans); cursor: pointer; transition: all 0.12s; text-align: left;
+}
+.nav-btn:hover { background: var(--bg3); color: var(--text); }
+.nav-btn.active { background: rgba(79,255,176,0.09); color: var(--accent); }
+.nav-icon { width: 22px; height: 22px; border-radius: 5px; background: var(--bg3); display: flex; align-items: center; justify-content: center; font-size: 12px; flex-shrink: 0; }
+.nav-btn.active .nav-icon { background: rgba(79,255,176,0.15); }
+
+.sidebar-footer { margin-top: auto; padding: 1rem 1.25rem 0; border-top: 1px solid var(--border); }
+.conn-badge { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text3); font-family: var(--mono); }
+.conn-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); transition: all 0.3s; }
+.conn-dot.live { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.conn-dot.dead { background: var(--red); }
+
+/* MAIN */
+.main { margin-left: 230px; flex: 1; padding: 2rem 2.5rem; max-width: 860px; }
+.page-head { margin-bottom: 1.75rem; }
+.page-head h2 { font-size: 21px; font-weight: 600; }
+.page-head p { font-size: 13px; color: var(--text2); margin-top: 4px; }
+
+.panel { display: none; }
+.panel.active { display: block; }
+
+/* CARDS */
+.card { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 1.25rem 1.5rem; margin-bottom: 1rem; }
+.card-title { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 1rem; }
+.card.accent-border { border-color: rgba(79,255,176,0.2); }
+
+/* FORM */
+.row { margin-bottom: 1rem; }
+label.lbl { font-size: 12px; color: var(--text2); display: block; margin-bottom: 5px; }
+input[type=text], input[type=password], select, textarea {
+  width: 100%; padding: 9px 12px; background: var(--bg3); border: 1px solid var(--border);
+  border-radius: var(--r); color: var(--text); font-size: 13px; font-family: var(--sans); outline: none; transition: border 0.15s;
+}
+input:focus, select:focus, textarea:focus { border-color: var(--border2); }
+select option { background: var(--bg3); }
+textarea { resize: vertical; font-family: var(--mono); line-height: 1.5; font-size: 12px; }
+.irow { display: flex; gap: 8px; }
+.irow input, .irow select { flex: 1; }
+
+/* BUTTONS */
+.btn { padding: 9px 18px; border-radius: var(--r); font-size: 13px; font-family: var(--sans); font-weight: 500; cursor: pointer; transition: all 0.13s; border: none; }
+.btn-p { background: var(--accent); color: #071a12; }
+.btn-p:hover { background: #3de89f; }
+.btn-g { background: transparent; color: var(--text2); border: 1px solid var(--border2); }
+.btn-g:hover { background: var(--bg3); color: var(--text); }
+.btn-d { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+.btn-d:hover { background: rgba(248,113,113,0.22); }
+.btn-row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+
+/* BADGES */
+.badge { display: inline-block; padding: 2px 9px; border-radius: 99px; font-size: 11px; font-weight: 500; font-family: var(--mono); }
+.b-green { background: rgba(52,211,153,0.12); color: var(--green); border: 1px solid rgba(52,211,153,0.25); }
+.b-red { background: rgba(248,113,113,0.12); color: var(--red); border: 1px solid rgba(248,113,113,0.25); }
+.b-amber { background: rgba(251,191,36,0.12); color: var(--amber); border: 1px solid rgba(251,191,36,0.25); }
+.b-blue { background: rgba(56,189,248,0.12); color: var(--accent2); border: 1px solid rgba(56,189,248,0.25); }
+.b-accent { background: rgba(79,255,176,0.1); color: var(--accent); border: 1px solid rgba(79,255,176,0.2); }
+.b-purple { background: rgba(167,139,250,0.12); color: var(--purple); border: 1px solid rgba(167,139,250,0.25); }
+
+/* RESULT BOX */
+.rbox { background: var(--bg3); border-radius: var(--r); padding: 1rem; margin-top: 1rem; border-left: 3px solid var(--accent); }
+.rbox-label { font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.1em; margin-bottom: 6px; }
+.rbox-val { font-family: var(--mono); font-size: 12px; color: var(--accent); word-break: break-all; line-height: 1.8; }
+
+/* STRENGTH */
+.sbar-wrap { margin-top: 8px; }
+.sbar { height: 4px; background: var(--bg3); border-radius: 2px; overflow: hidden; }
+.sbar-fill { height: 100%; border-radius: 2px; transition: width .3s, background .3s; width: 0%; }
+.sbar-txt { font-size: 11px; color: var(--text3); margin-top: 5px; }
+
+/* METRICS */
+.metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin-bottom: 1rem; }
+.metric { background: var(--bg2); border: 1px solid var(--border); border-radius: var(--rl); padding: 1rem 1.25rem; }
+.metric .ml { font-size: 10px; color: var(--text3); font-family: var(--mono); margin-bottom: 4px; }
+.metric .mv { font-size: 26px; font-weight: 600; font-family: var(--mono); line-height: 1; }
+.metric .ms { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* LOG */
+.logbox {
+  background: #090c14; border-radius: var(--r); padding: 1rem;
+  font-family: var(--mono); font-size: 12px; line-height: 1.6;
+  max-height: 220px; overflow-y: auto; border: 1px solid var(--border);
+  scrollbar-width: thin; scrollbar-color: var(--bg3) transparent;
+}
+.le { padding: 1px 0; }
+.le.hit { color: var(--red); }
+.le.miss { color: var(--text3); }
+.le.info { color: var(--accent2); }
+.le.warn { color: var(--amber); }
+.le.ok { color: var(--green); }
+
+/* PROGRESS */
+.prog-wrap { margin-top: 1rem; }
+.prog-top { display: flex; justify-content: space-between; font-size: 12px; color: var(--text2); margin-bottom: 6px; font-family: var(--mono); }
+.prog-bar { height: 6px; background: var(--bg3); border-radius: 3px; overflow: hidden; }
+.prog-fill { height: 100%; border-radius: 3px; background: var(--red); transition: width .25s; }
+
+/* USERS TABLE */
+.ut-row { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 13px; flex-wrap: wrap; }
+.ut-row:last-child { border-bottom: none; }
+.ut-name { font-weight: 500; min-width: 90px; }
+.ut-hash { font-family: var(--mono); font-size: 11px; color: var(--text3); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; cursor: pointer; min-width: 0; }
+.ut-hash:hover { color: var(--accent2); }
+
+/* COMPARE TABLE */
+.ct-row { display: flex; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+.ct-row:last-child { border-bottom: none; }
+.ct-key { flex: 0 0 90px; font-family: var(--mono); font-size: 12px; color: var(--text2); }
+.ct-hash { flex: 1; font-family: var(--mono); font-size: 11px; color: var(--text3); word-break: break-all; line-height: 1.7; }
+.ct-time { flex: 0 0 65px; text-align: right; font-family: var(--mono); font-size: 12px; color: var(--text2); }
+
+/* ALGO CARDS */
+.algo-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.algo-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--rl); padding: 1rem; }
+.algo-card .an { font-size: 14px; font-weight: 600; font-family: var(--mono); color: var(--text); margin-bottom: 5px; }
+.algo-card .ad { font-size: 12px; color: var(--text2); line-height: 1.6; }
+
+/* TOGGLES */
+.trow { display: flex; align-items: center; justify-content: space-between; padding: 10px 0; }
+.tinfo .tl { font-size: 13px; color: var(--text); }
+.tinfo .td { font-size: 12px; color: var(--text2); margin-top: 2px; }
+.toggle { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle input { opacity: 0; width: 0; height: 0; }
+.tslider { position: absolute; inset: 0; border-radius: 22px; background: var(--bg3); border: 1px solid var(--border2); cursor: pointer; transition: all .2s; }
+.tslider:before { content: ''; position: absolute; width: 16px; height: 16px; left: 2px; top: 2px; border-radius: 50%; background: var(--text3); transition: all .2s; }
+.toggle input:checked + .tslider { background: rgba(79,255,176,0.18); border-color: var(--accent); }
+.toggle input:checked + .tslider:before { transform: translateX(18px); background: var(--accent); }
+.sep { height: 1px; background: var(--border); }
+
+/* ATTACK TARGET SELECTOR */
+.target-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 1rem; }
+.target-card { background: var(--bg3); border: 1px solid var(--border); border-radius: var(--r); padding: 10px 12px; cursor: pointer; transition: border-color .15s; }
+.target-card:hover, .target-card.selected { border-color: var(--accent2); }
+.target-card .tc-user { font-size: 13px; font-weight: 500; }
+.target-card .tc-hash { font-family: var(--mono); font-size: 10px; color: var(--text3); margin-top: 3px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+
+/* SPINNER */
+.spin { display: inline-block; width: 14px; height: 14px; border: 2px solid var(--border2); border-top-color: var(--accent); border-radius: 50%; animation: spin .6s linear infinite; vertical-align: middle; margin-right: 6px; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* SCROLLBAR */
+::-webkit-scrollbar { width: 5px; } ::-webkit-scrollbar-thumb { background: var(--bg3); border-radius: 3px; }
+
+@media (max-width: 700px) {
+  .sidebar { position: static; width: 100%; flex-direction: row; flex-wrap: wrap; }
+  .main { margin-left: 0; padding: 1rem; }
+  .metrics { grid-template-columns: 1fr 1fr; }
+  .algo-grid, .target-grid { grid-template-columns: 1fr; }
+  .logo, .sidebar-footer { display: none; }
+}
+</style>
+</head>
+<body>
+<div class="layout">
+
+<!-- ── SIDEBAR ── -->
+<nav class="sidebar">
+  <div class="logo">
+    <div class="logo-mark">
+      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+        <rect x="2" y="2" width="14" height="14" rx="3" stroke="#071a12" stroke-width="1.8"/>
+        <circle cx="9" cy="8" r="2.2" stroke="#071a12" stroke-width="1.8"/>
+        <path d="M5.5 14.5c0-1.933 1.567-3.5 3.5-3.5s3.5 1.567 3.5 3.5" stroke="#071a12" stroke-width="1.8" stroke-linecap="round"/>
+      </svg>
+    </div>
+    <h1>Password Security Lab</h1>
+    <p>CMSC 414 · Spring 2025</p>
+  </div>
+
+  <div class="nav">
+    <div class="nav-group">
+      <span class="nav-grouplabel">Defense</span>
+      <button class="nav-btn active" onclick="go('hash',this)"><span class="nav-icon">🔐</span> Hash &amp; Store</button>
+      <button class="nav-btn" onclick="go('verify',this)"><span class="nav-icon">✅</span> Verify Login</button>
+    </div>
+    <div class="nav-group">
+      <span class="nav-grouplabel">Attack</span>
+      <button class="nav-btn" onclick="go('testdata',this)"><span class="nav-icon">🗂️</span> Test Data</button>
+      <button class="nav-btn" onclick="go('dict',this)"><span class="nav-icon">📖</span> Dictionary Attack</button>
+      <button class="nav-btn" onclick="go('brute',this)"><span class="nav-icon">⚡</span> Brute Force</button>
+    </div>
+    <div class="nav-group">
+      <span class="nav-grouplabel">Analysis</span>
+      <button class="nav-btn" onclick="go('compare',this)"><span class="nav-icon">🔬</span> Algo Compare</button>
+      <button class="nav-btn" onclick="go('logs',this)"><span class="nav-icon">📋</span> Login Logs</button>
+    </div>
+  </div>
+
+  <div class="sidebar-footer">
+    <div class="conn-badge">
+      <span class="conn-dot" id="cdot"></span>
+      <span id="ctext">Checking…</span>
+    </div>
+  </div>
+</nav>
+
+<!-- ── MAIN ── -->
+<main class="main">
+
+<!-- ════ HASH & STORE ════ -->
+<div id="panel-hash" class="panel active">
+  <div class="page-head"><h2>Hash &amp; Store</h2><p>Register users using <code style="color:var(--accent);font-size:12px">SecureAuth.create_user()</code> — bcrypt with auto-generated salt, stored in SQLite</p></div>
+
+  <div class="card">
+    <div class="card-title">Register new user</div>
+    <div class="row"><label class="lbl">Username</label><input type="text" id="ru" placeholder="e.g. alice"></div>
+    <div class="row">
+      <label class="lbl">Password</label>
+      <div class="irow">
+        <input type="password" id="rp" placeholder="Enter a password" oninput="strength()">
+        <button class="btn btn-g" onclick="tv('rp',this)">Show</button>
+      </div>
+      <div class="sbar-wrap"><div class="sbar"><div class="sbar-fill" id="sfill"></div></div><div class="sbar-txt" id="stxt">Enter a password to check strength</div></div>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="register()">Register via SecureAuth →</button>
+    </div>
+    <div id="rrbox" style="display:none" class="rbox">
+      <div class="rbox-label">bcrypt hash (stored in users.db)</div>
+      <div class="rbox-val" id="rrhash"></div>
+      <div style="display:flex;gap:8px;margin-top:10px;flex-wrap:wrap">
+        <span class="badge b-green">bcrypt</span>
+        <span class="badge b-blue" id="rrsalt"></span>
+        <span class="badge b-accent" id="rrtime"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Registered users <span style="color:var(--text3);font-weight:400">(click hash to load into attack panels)</span></div>
+    <div id="utbl"><div style="font-size:13px;color:var(--text3)">No users yet. Register above or load from DB.</div></div>
+    <div style="margin-top:12px"><button class="btn btn-g" onclick="loadUsers()">↺ Refresh from DB</button></div>
+  </div>
+</div>
+
+<!-- ════ VERIFY LOGIN ════ -->
+<div id="panel-verify" class="panel">
+  <div class="page-head"><h2>Verify Login</h2><p>Tests <code style="color:var(--accent);font-size:12px">SecureAuth.authenticate()</code> — bcrypt.checkpw + rate limiting + lockout</p></div>
+
+  <div class="card">
+    <div class="card-title">Login attempt</div>
+    <div class="row"><label class="lbl">Username</label><input type="text" id="vu" placeholder="e.g. alice"></div>
+    <div class="row"><label class="lbl">Password</label><input type="password" id="vp" placeholder="Enter password"></div>
+    <div class="btn-row">
+      <button class="btn btn-p" onclick="login()">Authenticate →</button>
+      <button class="btn btn-g" onclick="unlock()">🔓 Unlock account</button>
+    </div>
+    <div id="vbox" style="display:none" class="rbox">
+      <div class="rbox-label">Result</div>
+      <div class="rbox-val" id="vout"></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Rate limiting &amp; lockout info</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8">
+      The backend (<code style="color:var(--accent2)">SecureAuth</code>) tracks failed attempts per user in memory.<br>
+      After <strong style="color:var(--text)">5 consecutive failures</strong>, the account is locked for <strong style="color:var(--text)">5 minutes</strong> and <code>locked_until</code> is written to SQLite.<br>
+      Attempts reset if more than 60 seconds pass between failed logins.
+    </div>
+  </div>
+</div>
+
+<!-- ════ TEST DATA ════ -->
+<div id="panel-testdata" class="panel">
+  <div class="page-head"><h2>Generate Test Data</h2><p>Runs <code style="color:var(--accent);font-size:12px">generate_test_data.py</code> logic — creates <code>test_passwords.txt</code> with MD5 hashes of weak passwords</p></div>
+
+  <div class="card">
+    <div class="card-title">Create test_passwords.txt</div>
+    <div style="font-size:13px;color:var(--text2);line-height:1.8;margin-bottom:1rem">
+      Generates 5 weak username:MD5hash pairs identical to <code style="color:var(--accent2)">generate_test_data.py</code>.<br>
+      These are intentionally vulnerable — used to demonstrate how quickly MD5 hashes are cracked.
+    </div>
+    <button class="btn btn-p" onclick="genTestData()">Generate test_passwords.txt →</button>
+    <div id="tdbox" style="display:none;margin-top:1rem">
+      <div class="card-title">Generated entries</div>
+      <div id="tdtbl"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ DICTIONARY ATTACK ════ -->
+<div id="panel-dict" class="panel">
+  <div class="page-head"><h2>Dictionary Attack</h2><p>Runs <code style="color:var(--accent);font-size:12px">PW_Project.py</code> (dictionary_attack.py) logic — MD5 hash lookup via wordlist</p></div>
+
+  <div class="metrics">
+    <div class="metric"><div class="ml">// attempts</div><div class="mv" id="da-att">0</div><div class="ms">total guesses</div></div>
+    <div class="metric"><div class="ml">// cracked</div><div class="mv" id="da-crd" style="color:var(--red)">0</div><div class="ms">passwords found</div></div>
+    <div class="metric"><div class="ml">// time</div><div class="mv" id="da-time">—</div><div class="ms">milliseconds</div></div>
+    <div class="metric"><div class="ml">// status</div><div class="mv" id="da-stat" style="font-size:14px;color:var(--text3)">idle</div><div class="ms">attack state</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Target — select a registered or test user</div>
+    <div class="row"><label class="lbl">Target hash (MD5) — must match a hash in test_passwords.txt</label><input type="text" id="dt-hash" placeholder="e.g. 5f4dcc3b5aa765d61d8327deb882cf99" style="font-family:var(--mono);font-size:12px"></div>
+    <div class="row"><label class="lbl">Username label (optional)</label><input type="text" id="dt-user" placeholder="e.g. user"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Wordlist</div>
+    <div class="row">
+      <label class="lbl">Paste wordlist (one word per line) — use rockyou.txt entries for realistic demo</label>
+      <textarea id="d-wl" rows="8" placeholder="password&#10;123456&#10;letmein&#10;qwerty&#10;monkey&#10;abc123&#10;iloveyou&#10;admin&#10;welcome&#10;dragon&#10;root&#10;guest&#10;test&#10;pass&#10;login">password
+123456
+letmein
+qwerty
+monkey
+abc123
+iloveyou
+admin
+welcome
+dragon
+root
+guest
+test
+pass
+login
+1234
+12345
+password1
+passw0rd
+master
+hello
+sunshine</textarea>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-d" onclick="runDict()">⚡ Run Dictionary Attack</button>
+      <button class="btn btn-g" onclick="loadMD5Targets()">Load from test_passwords.txt</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Attack log</div>
+    <div class="logbox" id="d-log"><div class="le info">[ready] Configure target and wordlist above, then press Run.</div></div>
+  </div>
+
+  <div class="card accent-border" id="d-defense">
+    <div class="card-title">Defense analysis</div>
+    <div id="d-analysis" style="font-size:13px;color:var(--text2);line-height:1.7">Run an attack to see defense results.</div>
+  </div>
+</div>
+
+<!-- ════ BRUTE FORCE ════ -->
+<div id="panel-brute" class="panel">
+  <div class="page-head"><h2>Brute Force Attack</h2><p>Runs <code style="color:var(--accent);font-size:12px">brute_force_attack.py</code> logic — itertools.product over charset, MD5 comparison</p></div>
+
+  <div class="metrics">
+    <div class="metric"><div class="ml">// attempts</div><div class="mv" id="bf-att">0</div><div class="ms">total guesses</div></div>
+    <div class="metric"><div class="ml">// cracked</div><div class="mv" id="bf-crd" style="color:var(--red)">0</div><div class="ms">passwords found</div></div>
+    <div class="metric"><div class="ml">// time</div><div class="mv" id="bf-time">—</div><div class="ms">milliseconds</div></div>
+    <div class="metric"><div class="ml">// rate</div><div class="mv" id="bf-rate">—</div><div class="ms">attempts/sec</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Target</div>
+    <div class="row"><label class="lbl">Target hash (MD5)</label><input type="text" id="bf-hash" placeholder="e.g. 5f4dcc3b5aa765d61d8327deb882cf99" style="font-family:var(--mono);font-size:12px"></div>
+    <div class="row"><label class="lbl">Username label</label><input type="text" id="bf-user" placeholder="e.g. test"></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Attack parameters</div>
+    <div class="row">
+      <label class="lbl">Max password length (server hard-capped at 6)</label>
+      <input type="text" id="bf-len" value="4" style="width:80px">
+    </div>
+    <div class="row">
+      <label class="lbl">Character set</label>
+      <select id="bf-cs">
+        <option value="alpha">Lowercase a–z only (26 chars)</option>
+        <option value="alphanum" selected>Alphanumeric a–z + 0–9 (36 chars)</option>
+        <option value="full">Full: a–z, A–Z, 0–9, !@#$% (72 chars)</option>
+      </select>
+    </div>
+    <div class="btn-row">
+      <button class="btn btn-d" onclick="runBrute()">⚡ Run Brute Force</button>
+      <button class="btn btn-g" onclick="loadMD5Targets('bf-hash','bf-user')">Load from test_passwords.txt</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Attack log</div>
+    <div class="logbox" id="bf-log"><div class="le info">[ready] Configure target and parameters above, then press Run.</div></div>
+  </div>
+
+  <div class="card accent-border">
+    <div class="card-title">Defense analysis</div>
+    <div id="bf-analysis" style="font-size:13px;color:var(--text2);line-height:1.7">Run an attack to see defense results.</div>
+  </div>
+</div>
+
+<!-- ════ ALGO COMPARE ════ -->
+<div id="panel-compare" class="panel">
+  <div class="page-head"><h2>Algorithm Comparison</h2><p>Hashes the same password with bcrypt, Argon2id, SHA-256, and MD5 — compares output &amp; timing via <code style="color:var(--accent);font-size:12px">POST /compare</code></p></div>
+
+  <div class="card">
+    <div class="card-title">Test password</div>
+    <div class="irow" style="margin-bottom:0">
+      <input type="text" id="cp" placeholder="e.g. hunter2">
+      <button class="btn btn-p" onclick="runCompare()">Compare all →</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Hash outputs &amp; timing</div>
+    <div id="cmp-out"><div style="font-size:13px;color:var(--text3)">Enter a password above to compare.</div></div>
+  </div>
+
+  <div class="card">
+    <div class="card-title">Security ratings</div>
+    <div class="algo-grid">
+      <div class="algo-card"><div class="an">bcrypt</div><div class="ad">Adaptive cost factor (rounds=12). Salted automatically. Slows down as hardware improves. Used in this project's <code style="color:var(--accent2)">SecureAuth</code>.</div><div style="margin-top:8px"><span class="badge b-green">Recommended</span></div></div>
+      <div class="algo-card"><div class="an">Argon2id</div><div class="ad">Memory-hard. PHC winner 2015. Resists GPU + ASIC attacks. Best choice for new systems. More configurable than bcrypt.</div><div style="margin-top:8px"><span class="badge b-green">Recommended</span></div></div>
+      <div class="algo-card"><div class="an">SHA-256</div><div class="ad">Designed for speed. No cost factor, no built-in salt. Billions of hashes/sec on GPUs. Used in this project only for demonstration.</div><div style="margin-top:8px"><span class="badge b-amber">Insecure for passwords</span></div></div>
+      <div class="algo-card"><div class="an">MD5</div><div class="ad">Cryptographically broken. Used in <code style="color:var(--accent2)">generate_test_data.py</code> and attack scripts intentionally to show vulnerability. Never use in production.</div><div style="margin-top:8px"><span class="badge b-red">Deprecated / Broken</span></div></div>
+    </div>
+  </div>
+</div>
+
+<!-- ════ LOGS ════ -->
+<div id="panel-logs" class="panel">
+  <div class="page-head"><h2>Login Logs</h2><p>Reads from the <code style="color:var(--accent);font-size:12px">login_logs</code> table in <code style="color:var(--accent);font-size:12px">users.db</code> — populated by <code style="color:var(--accent);font-size:12px">SecureAuth.log_attempt()</code></p></div>
+
+  <div class="card">
+    <div class="btn-row" style="margin-bottom:1rem">
+      <button class="btn btn-p" onclick="loadLogs()">↺ Refresh logs</button>
+    </div>
+    <div id="logs-out"><div style="font-size:13px;color:var(--text3)">Click Refresh to load from users.db</div></div>
+  </div>
+</div>
+
+</main>
+</div>
+
+<script>
+const API = 'http://localhost:5000';
+let testEntries = [];   // from generate-test-data
+let dbUsers    = [];    // from /users
+
+// ── NAV ──
+function go(name, btn) {
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('panel-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+// ── CONNECTION CHECK ──
+async function checkConn() {
+  try {
+    const r = await fetch(API + '/health', { signal: AbortSignal.timeout(3000) });
+    const d = await r.json();
+    document.getElementById('cdot').className = 'conn-dot live';
+    document.getElementById('ctext').textContent = 'Backend live';
+    loadUsers();
+  } catch(e) {
+    document.getElementById('cdot').className = 'conn-dot dead';
+    document.getElementById('ctext').textContent = 'No backend';
+  }
+}
+checkConn();
+
+// ── UTILS ──
+function tv(id, btn) {
+  const el = document.getElementById(id);
+  el.type = el.type === 'password' ? 'text' : 'password';
+  btn.textContent = el.type === 'password' ? 'Show' : 'Hide';
+}
+
+function strength() {
+  const pw = document.getElementById('rp').value;
+  const fill = document.getElementById('sfill'), txt = document.getElementById('stxt');
+  let s = 0;
+  if (pw.length >= 8) s += 20; if (pw.length >= 12) s += 20;
+  if (/[A-Z]/.test(pw)) s += 20; if (/[0-9]/.test(pw)) s += 20;
+  if (/[^A-Za-z0-9]/.test(pw)) s += 20;
+  const cols = ['#f87171','#f87171','#fbbf24','#34d399','#4fffb0'];
+  const labs = ['Very weak','Weak','Fair','Strong','Very strong'];
+  const idx  = pw.length ? Math.min(4, Math.floor(s/20)) : -1;
+  fill.style.width = pw.length ? s + '%' : '0%';
+  fill.style.background = idx >= 0 ? cols[idx] : '';
+  txt.textContent = pw.length ? labs[idx] : 'Enter a password to check strength';
+  txt.style.color = idx >= 0 ? cols[idx] : 'var(--text3)';
+}
+
+function appendLog(logId, msg, cls = '') {
+  const box = document.getElementById(logId);
+  const div = document.createElement('div');
+  div.className = 'le ' + cls;
+  div.textContent = msg;
+  box.appendChild(div);
+  box.scrollTop = box.scrollHeight;
+}
+
+function clearLog(logId) {
+  document.getElementById(logId).innerHTML = '';
+}
+
+// ── HASH & STORE ──
+async function register() {
+  const user = document.getElementById('ru').value.trim();
+  const pass = document.getElementById('rp').value;
+  if (!user || !pass) { alert('Enter username and password.'); return; }
+
+  const btn = event.target;
+  btn.innerHTML = '<span class="spin"></span>Hashing…';
+  btn.disabled = true;
+
+  try {
+    const r = await fetch(API + '/register', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    const d = await r.json();
+    if (d.success || d.hash) {
+      document.getElementById('rrhash').textContent = d.hash;
+      document.getElementById('rrsalt').textContent = 'salt: ' + (d.salt||'').slice(0,10) + '…';
+      document.getElementById('rrtime').textContent = d.time_ms + 'ms';
+      document.getElementById('rrbox').style.display = 'block';
+      loadUsers();
+    } else {
+      alert(d.error || 'Registration failed');
+    }
+  } catch(e) {
+    alert('Cannot reach backend. Make sure app.py is running on port 5000.\n\npip install flask flask-cors bcrypt psutil\npython app.py');
+  }
+  btn.innerHTML = 'Register via SecureAuth →'; btn.disabled = false;
+}
+
+async function loadUsers() {
+  try {
+    const r = await fetch(API + '/users');
+    const d = await r.json();
+    dbUsers = d.users || [];
+    renderUsers();
+  } catch(e) {}
+}
+
+function renderUsers() {
+  const el = document.getElementById('utbl');
+  if (!dbUsers.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text3)">No users in database.</div>'; return; }
+  el.innerHTML = dbUsers.map(u => {
+    const locked = u.locked_until ? `<span class="badge b-red">locked</span>` : '';
+    return `<div class="ut-row">
+      <div class="ut-name">${u.username} <span class="badge b-purple">bcrypt</span> ${locked}</div>
+      <div class="ut-hash" onclick="fillAttack('${u.password_hash}','${u.username}')" title="Click to load into attack panels">${u.password_hash}</div>
+    </div>`;
+  }).join('');
+}
+
+function fillAttack(hash, user) {
+  document.getElementById('dt-hash').value = hash;
+  document.getElementById('dt-user').value = user;
+  document.getElementById('bf-hash').value = hash;
+  document.getElementById('bf-user').value = user;
+}
+
+// ── VERIFY LOGIN ──
+async function login() {
+  const user = document.getElementById('vu').value.trim();
+  const pass = document.getElementById('vp').value;
+  if (!user || !pass) { alert('Enter username and password.'); return; }
+
+  try {
+    const r = await fetch(API + '/login', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username: user, password: pass })
+    });
+    const d = await r.json();
+    const box = document.getElementById('vbox'), out = document.getElementById('vout');
+    box.style.display = 'block';
+    out.textContent = d.message || (d.success ? 'Authentication successful' : 'Authentication failed');
+    box.style.borderLeftColor = d.success ? 'var(--green)' : d.locked ? 'var(--amber)' : 'var(--red)';
+    out.style.color = d.success ? 'var(--green)' : d.locked ? 'var(--amber)' : 'var(--red)';
+    loadUsers();
+  } catch(e) { alert('Cannot reach backend.'); }
+}
+
+async function unlock() {
+  const user = document.getElementById('vu').value.trim();
+  if (!user) { alert('Enter a username to unlock.'); return; }
+  try {
+    const r = await fetch(API + '/unlock', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ username: user })
+    });
+    const d = await r.json();
+    alert(d.message);
+    loadUsers();
+  } catch(e) { alert('Cannot reach backend.'); }
+}
+
+// ── TEST DATA ──
+async function genTestData() {
+  try {
+    const r = await fetch(API + '/generate-test-data', { method: 'POST' });
+    const d = await r.json();
+    testEntries = d.entries || [];
+    const box = document.getElementById('tdbox');
+    box.style.display = 'block';
+    document.getElementById('tdtbl').innerHTML = testEntries.map(e =>
+      `<div class="ut-row">
+        <div class="ut-name">${e.username}</div>
+        <div style="font-size:12px;color:var(--text2);min-width:80px">${e.password}</div>
+        <div class="ut-hash" onclick="document.getElementById('dt-hash').value='${e.hash}';document.getElementById('dt-user').value='${e.username}'" title="Click to load into Dictionary Attack">${e.hash}</div>
+        <span class="badge b-red">MD5</span>
+      </div>`
+    ).join('');
+  } catch(e) { alert('Cannot reach backend.'); }
+}
+
+function loadMD5Targets(hashId = 'dt-hash', userEl = 'dt-user') {
+  if (!testEntries.length) { alert('Generate test data first (Test Data panel).'); return; }
+  const e = testEntries[0];
+  document.getElementById(hashId).value = e.hash;
+  document.getElementById(userEl || 'dt-user').value = e.username;
+  alert(`Loaded ${e.username} (MD5 of "${e.password}")\nHash: ${e.hash}`);
+}
+
+// ── DICTIONARY ATTACK ──
+async function runDict() {
+  const hash = document.getElementById('dt-hash').value.trim();
+  const user = document.getElementById('dt-user').value.trim() || 'target';
+  const wl   = document.getElementById('d-wl').value.split('\n').map(w => w.trim()).filter(Boolean);
+
+  if (!hash) { alert('Enter a target hash.'); return; }
+  if (!wl.length) { alert('Enter at least one word in the wordlist.'); return; }
+
+  clearLog('d-log');
+  appendLog('d-log', `[start] Dictionary attack | target: ${user} | ${wl.length} words`, 'info');
+  document.getElementById('da-stat').textContent = 'running';
+  document.getElementById('da-stat').style.color = 'var(--amber)';
+
+  try {
+    const r = await fetch(API + '/attack/dictionary', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ target_hash: hash, wordlist: wl, username: user })
+    });
+    const d = await r.json();
+
+    // Render log
+    (d.log || []).forEach(line => {
+      const cls = line.includes('[HIT]') ? 'hit' : line.includes('[try]') ? 'miss' : line.includes('[start]') ? 'info' : 'info';
+      appendLog('d-log', line, cls);
+    });
+
+    document.getElementById('da-att').textContent  = (d.attempts || 0).toLocaleString();
+    document.getElementById('da-crd').textContent  = d.cracked ? '1' : '0';
+    document.getElementById('da-time').textContent = d.time_ms + 'ms';
+    document.getElementById('da-stat').textContent = d.cracked ? 'cracked' : 'failed';
+    document.getElementById('da-stat').style.color = d.cracked ? 'var(--red)' : 'var(--green)';
+
+    const analysis = document.getElementById('d-analysis');
+    if (d.cracked) {
+      analysis.innerHTML = `<span style="color:var(--red);font-weight:600">✗ Hash cracked.</span> Password <code style="color:var(--amber)">"${d.password}"</code> found in ${d.attempts} attempts in ${d.time_ms}ms. This is MD5 — no salt, no cost factor. Any word in rockyou.txt is instantly vulnerable. <strong style="color:var(--text)">Use bcrypt.</strong>`;
+    } else {
+      analysis.innerHTML = `<span style="color:var(--green);font-weight:600">✓ Wordlist exhausted.</span> ${d.attempts} attempts, no match. Either the password isn't in the wordlist, or the hash is bcrypt/Argon2 (in which case cracking is computationally infeasible).`;
+    }
+  } catch(e) { alert('Cannot reach backend.'); }
+}
+
+// ── BRUTE FORCE ──
+async function runBrute() {
+  const hash = document.getElementById('bf-hash').value.trim();
+  const user = document.getElementById('bf-user').value.trim() || 'target';
+  const len  = parseInt(document.getElementById('bf-len').value) || 4;
+  const cs   = document.getElementById('bf-cs').value;
+
+  if (!hash) { alert('Enter a target hash.'); return; }
+
+  clearLog('bf-log');
+  appendLog('bf-log', `[start] Brute force | target: ${user} | max_len=${len} | charset=${cs}`, 'info');
+  appendLog('bf-log', '[info] Sending to backend (brute_force_attack.py logic)...', 'info');
+  document.getElementById('bf-att').textContent = '…';
+
+  try {
+    const r = await fetch(API + '/attack/bruteforce', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ target_hash: hash, max_length: len, charset: cs, username: user })
+    });
+    const d = await r.json();
+
+    (d.log || []).forEach(line => {
+      const cls = line.includes('[HIT]') ? 'hit' : line.includes('[progress]') ? 'warn' : line.includes('[len=') ? 'info' : 'miss';
+      appendLog('bf-log', line, cls);
+    });
+
+    const rate = d.time_ms > 0 ? Math.round(d.attempts / (d.time_ms / 1000)).toLocaleString() : '—';
+    document.getElementById('bf-att').textContent  = (d.attempts || 0).toLocaleString();
+    document.getElementById('bf-crd').textContent  = d.cracked ? '1' : '0';
+    document.getElementById('bf-time').textContent = d.time_ms + 'ms';
+    document.getElementById('bf-rate').textContent = rate;
+
+    const analysis = document.getElementById('bf-analysis');
+    if (d.cracked) {
+      analysis.innerHTML = `<span style="color:var(--red);font-weight:600">✗ Hash cracked.</span> Password <code style="color:var(--amber)">"${d.password}"</code> recovered in ${(d.attempts||0).toLocaleString()} attempts (${d.time_ms}ms). MD5 with no salt is trivially broken by brute force. <strong style="color:var(--text)">bcrypt would take billions of years for the same search space.</strong>`;
+    } else {
+      analysis.innerHTML = `<span style="color:var(--green);font-weight:600">✓ Search space exhausted — no match.</span> ${(d.attempts||0).toLocaleString()} attempts in ${d.time_ms}ms. The password is longer than ${len} characters, uses characters outside the charset, or is a bcrypt hash (immune to this approach).`;
+    }
+  } catch(e) { alert('Cannot reach backend. This endpoint may take a while for long passwords.'); }
+}
+
+// ── ALGO COMPARE ──
+async function runCompare() {
+  const pass = document.getElementById('cp').value.trim();
+  if (!pass) { alert('Enter a password.'); return; }
+  document.getElementById('cmp-out').innerHTML = '<div style="font-size:13px;color:var(--text3);font-family:var(--mono)"><span class="spin"></span>Hashing with all algorithms…</div>';
+  try {
+    const r = await fetch(API + '/compare', {
+      method: 'POST', headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ password: pass })
+    });
+    const d = await r.json();
+    const results = d.results || [];
+    document.getElementById('cmp-out').innerHTML = results.map(res => `
+      <div class="ct-row">
+        <div class="ct-key">${res.algo}<br><span class="badge ${res.secure ? 'b-green' : 'b-red'}" style="margin-top:4px">${res.secure ? 'secure' : 'weak'}</span></div>
+        <div class="ct-hash">${res.hash}</div>
+        <div class="ct-time">${res.time_ms != null ? res.time_ms + 'ms' : '—'}</div>
+      </div>`).join('');
+  } catch(e) { alert('Cannot reach backend.'); document.getElementById('cmp-out').innerHTML = '<div style="font-size:13px;color:var(--red)">Backend unavailable.</div>'; }
+}
+
+// ── LOGIN LOGS ──
+async function loadLogs() {
+  try {
+    const r = await fetch(API + '/logs');
+    const d = await r.json();
+    const logs = d.logs || [];
+    const el = document.getElementById('logs-out');
+    if (!logs.length) { el.innerHTML = '<div style="font-size:13px;color:var(--text3)">No login attempts recorded yet.</div>'; return; }
+    el.innerHTML = `<div style="display:grid;grid-template-columns:120px 80px 1fr;gap:0;font-size:12px">
+      <div style="padding:8px 0;color:var(--text3);font-family:var(--mono);border-bottom:1px solid var(--border)">username</div>
+      <div style="padding:8px 0;color:var(--text3);font-family:var(--mono);border-bottom:1px solid var(--border)">result</div>
+      <div style="padding:8px 0;color:var(--text3);font-family:var(--mono);border-bottom:1px solid var(--border)">timestamp</div>
+      ${logs.map(l => `
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);font-family:var(--mono)">${l.username}</div>
+        <div style="padding:8px 0;border-bottom:1px solid var(--border)"><span class="badge ${l.success ? 'b-green' : 'b-red'}">${l.success ? 'success' : 'failed'}</span></div>
+        <div style="padding:8px 0;border-bottom:1px solid var(--border);color:var(--text3);font-family:var(--mono)">${l.timestamp}</div>`).join('')}
+    </div>`;
+  } catch(e) { document.getElementById('logs-out').innerHTML = '<div style="font-size:13px;color:var(--red)">Cannot reach backend.</div>'; }
+}
+</script>
+</body>
+</html>
